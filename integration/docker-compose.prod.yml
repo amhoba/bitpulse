@@ -1,0 +1,137 @@
+services:
+  frontend:
+    restart: always
+    env_file:
+      - ../frontend/.env
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    build:
+      context: ../frontend
+      target: prod
+      args:
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`clipfinity.space`) && PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certResolver=myresolver"
+      - "traefik.http.middlewares.frontend-set-header.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN}"
+      - "traefik.http.middlewares.frontend-set-header.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.frontend.middlewares=frontend-set-header"
+    networks:
+      - clipfinity
+
+  backend:
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    env_file:
+      - ../backend/.env
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    build:
+      context: ../backend
+      target: prod
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`clipfinity.space`) && PathPrefix(`/backend`)"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certResolver=myresolver"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend"
+      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
+    networks:
+      - clipfinity
+
+  minio:
+    restart: always
+    volumes:
+      - minio_data:/data
+    env_file:
+      - ../minio/.env
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    build:
+      context: ../minio
+      target: prod
+    ports:
+      - "127.0.0.1:8002:9001"   # Console UI
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`clipfinity.space`) && PathPrefix(`/minio`)"
+      - "traefik.http.routers.minio.tls=true"
+      - "traefik.http.routers.minio.tls.certResolver=myresolver"
+      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
+      - "traefik.http.middlewares.minio-set-host.headers.customrequestheaders.Host=minio:9000"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-set-host"
+    networks:
+      - clipfinity
+
+  database:
+    restart: always
+    volumes:
+      - database_pgdata:/var/lib/postgresql/data
+    env_file:
+      - ../database/.env
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    build:
+      context: ../database
+      target: prod
+    networks:
+      - clipfinity
+
+  pgadmin:
+    restart: always
+    volumes:
+      - ../pgadmin/servers.json:/pgadmin4/servers.json
+    ports:
+      - "127.0.0.1:8001:80"
+    env_file:
+      - ../pgadmin/.env
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    build:
+      context: ../pgadmin
+      target: prod
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - clipfinity
+
+  gateway:
+    restart: always
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --providers.docker=true --ping=true --log=true --log.level="TRACE" --accesslog=true --tracing=true
+    ports:
+      # The HTTP (AND S) port
+      - "80:80"
+      - "443:443"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_acme_storage:/etc/traefik/acme
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    build:
+      context: ../gateway
+      target: prod
+    networks:
+      - clipfinity
+
+networks:
+  clipfinity:
+    driver: bridge
+
+volumes:
+  database_pgdata:
+  minio_data:
+  traefik_acme_storage:
