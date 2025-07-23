@@ -21,7 +21,7 @@ WORKDIR /assets
 CMD ["bash", "-li", "entrypoint.sh"]
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD nc -z localhost 3000 || exit 1
 
 #
 #
