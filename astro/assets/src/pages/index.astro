@@ -1,49 +1,69 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getCollection } from "astro:content"
+import BlogLayout from "../layouts/BlogLayout.astro"
+import Header from "../components/Header.astro"
+import Footer from "../components/Footer.astro"
+import PostCard from "../components/PostCard.astro"
+import FeaturedCard from "../components/FeaturedCard.astro"
+import SiteOptions from "../site.config.mjs"
+
+// Get all articles and sort by publication date
+const allPosts = await getCollection("article")
+const sortedPosts = allPosts.sort((a, b) => new Date(b.data.pubDate).valueOf() - new Date(a.data.pubDate).valueOf())
+
+// Get featured posts
+const featuredPosts = allPosts.filter((post) => post.data.featured).slice(0, 3)
+
+// Get latest posts for homepage (limit to 6)
+const latestPosts = sortedPosts.slice(0, SiteOptions.numberOfLatestPostsOnHomePage || 6)
+const showCategory = SiteOptions.showCategoryOnPosts || false
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<BlogLayout title=`${SiteOptions.siteTitle}`>
+  <Header />
+
+  <!-- Light Horizontal Bar -->
+  <hr class="border-t border-gray-200 dark:border-gray-700 my-8" />
+
+  <!-- Featured Blog Posts -->
+
+  {
+    SiteOptions.showFeaturrdPostsOnHomePage && featuredPosts.length > 0 && (
+      <section class="mb-16">
+        {SiteOptions.labels.featuredPosts && <h2 class="text-2xl font-semibold mb-8 text-center">{SiteOptions.labels.featuredPosts}</h2>}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {featuredPosts.map((post) => (
+            <FeaturedCard post={post} />
+          ))}
+        </div>
+        <hr class="border-t border-gray-200 dark:border-gray-700 my-12" />
+      </section>
+    )
+  }
+
+  <!-- Latest Blog Posts -->
+  <section>
+    {SiteOptions.labels.latestPosts && <h2 class="text-2xl font-semibold mb-8 text-center">{SiteOptions.labels.latestPosts}</h2>}
+    <ul class="space-y-4">
+      {latestPosts.map((post) => <PostCard post={post} showCategory={showCategory} />)}
+    </ul>
+
+    <!-- View All Posts Link -->
+    {
+      sortedPosts.length > 6 && (
+        <div class="text-center mt-8">
+          <a href="/blog/" class="inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors">
+            {/* View All Posts ({sortedPosts.length}) */}
+            {SiteOptions.labels.viewAllPosts}
+            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      )
+    }
+
+    <!-- Minimal Footer -->
+    <Footer />
+  </section>
+</BlogLayout>
