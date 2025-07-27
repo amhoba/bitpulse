@@ -28,7 +28,7 @@ export default {
         nextText: "Next", // Text for next page button
         postLabel: "posts", // Label used in pagination info (e.g., "8 posts")
     },
-    defaultAuthorName: "Hasin Hayder",
+    defaultAuthorName: "Amir Hossein Baghernezhad",
     showCategoriesLinkOnFooter: true, // Show Categories link in footer
     showTagsLinkOnFooter: true, // Show Tags link in footer
     showAuthorsLinkOnFooter: true, // Show Authors link in footer
