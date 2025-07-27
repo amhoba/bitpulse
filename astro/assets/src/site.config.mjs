@@ -1,7 +1,7 @@
 export default {
-    siteTitle: "The Storyteller", // Main site title displayed in header
-    siteSubTitle: "Minimal musings on code, design, and life", // Subtitle shown under main title
-    copyright: "© 2025 The Storyteller. All Rights Reserved.", // Footer copyright text
+    siteTitle: "BitPulse", // Main site title displayed in header
+    siteSubTitle: "Crypto news and Market analysis", // Subtitle shown under main title
+    copyright: "© 2025 BitPulse. All Rights Reserved.", // Footer copyright text
     showAuthorsOnHomePage: false, // Display author info on homepage
     showFeaturrdPostsOnHomePage: true, // Show featured posts section on homepage
     showCategoryOnPosts: true, // Display categories on posts in homepage
