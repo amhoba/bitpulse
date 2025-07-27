@@ -1,4 +1,19 @@
 services:
+  composer:
+    restart: always
+    env_file:
+      - ../composer/.env
+    environment:
+      - TZ=UTC
+      - STAGE=dev
+    build:
+      context: ../composer
+      target: dev
+    volumes:
+      - ../composer/assets:/assets
+    networks:
+      - bitpulse
+
   astro:
     restart: always
     env_file:
