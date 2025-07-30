@@ -15,6 +15,12 @@ RUN apt install curl iputils-ping -y
 USER node
 RUN echo 'alias l="ls -lh"\nalias ll="ls -alF"' >> ~/.bashrc
 
+USER root
+WORKDIR /
+RUN pnpm i playwright && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers pnpm exec playwright install --with-deps
+USER node
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
+
 USER node
 EXPOSE 3000
 WORKDIR /assets
