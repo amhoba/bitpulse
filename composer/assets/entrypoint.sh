@@ -9,7 +9,7 @@ if [ "$STAGE" = "prod" ]; then
 else
     echo "Starting development server..."
     pnpm i
-    pnpm dev &
+    pnpm start &
 fi
 
 # Keep the script running indefinitely
