@@ -1,7 +1,12 @@
+import {
+    loadArticlePromptTemplates,
+    getArticlePromptById,
+    fillPromptTemplate
+} from './promptTemplates';
+
+import { callLLM } from './llmClient';
 import { scrapeCryptoNews } from './cryptoNewsScraper';
 import winston from 'winston';
-import { loadPromptTemplates, getPromptTemplateById, fillPromptTemplate } from './promptTemplates';
-import { callLLM } from './llmClient';
 
 const logger = winston.createLogger({
     level: 'info',
@@ -31,15 +36,16 @@ async function main() {
             logger.info('---------------------------------------------');
         });
 
-        const templates = loadPromptTemplates();
+        // Load article prompts and choose one
+        const templates = loadArticlePromptTemplates();
         logger.info('Prompt templates available:');
         templates.forEach(t =>
             logger.info(`ID: ${t.id} | Name: ${t.name} | Description: ${t.description}`)
         );
 
-        // Example: select template by ID (in future, you can make this more intelligent)
-        const selectedTemplateId = 'summarize'; // <-- CHANGE as desired
-        const promptTmpl = getPromptTemplateById(selectedTemplateId);
+        const selectedTemplateId = 'summarize';
+        const promptTmpl = getArticlePromptById(selectedTemplateId);
+
         if (!promptTmpl) {
             logger.error(`Prompt template with ID '${selectedTemplateId}' not found.`);
             process.exit(1);
@@ -49,7 +55,7 @@ async function main() {
             if (article.content) {
                 const prompt = fillPromptTemplate(promptTmpl, {
                     content: article.content,
-                    images: (article.images || []).map(img => img.url).join('\n') // optional handling
+                    images: (article.images || []).map(img => img.url).join('\n')
                 });
 
                 const result = await callLLM(prompt);
