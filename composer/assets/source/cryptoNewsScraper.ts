@@ -82,13 +82,17 @@ export async function scrapeArticleContent(page: Page, url: string): Promise<Par
     // Get title
     const title = await page.$eval('h1.post-detail__title', el => el.textContent?.trim() ?? '');
 
-    // Clean content: remove summary & related blocks, then get plain text
+    // Clean up the article before extracting text
     const contentText = await page.$eval('div.post-detail__content.blocks', el => {
-        el.querySelectorAll('.cn-block-summary').forEach(e => e.remove());
-        el.querySelectorAll('.cn-block-related-link').forEach(e => e.remove());
-        // Optionally, remove more unwanted selectors if you identify them later
+        // Remove summary, related links, disclaimer blocks
+        el.querySelectorAll('.cn-block-summary, .cn-block-related-link, .cn-block-disclaimer').forEach(e => e.remove());
+        // Remove figure captions and all figure blocks (images), they typically clutter plain text for your use-case
+        el.querySelectorAll('figure, figcaption').forEach(e => e.remove());
+        // Optionally remove custom badge classes or very short text-only children (may overlap with actual content—use with care)
+        // Example for token badges, if found:
+        el.querySelectorAll('token-badge, .token-badge-container').forEach(e => e.remove());
 
-        // NOTE: Use innerText for plain readable article text
+        // Return clean, human-friendly article text
         return el.innerText.trim();
     });
 
