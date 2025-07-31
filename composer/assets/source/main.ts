@@ -20,9 +20,12 @@ async function main() {
         articles.forEach(article => {
             logger.info(`Title: ${article.title}`);
             logger.info(`URL: ${article.url}`);
-            if (article.summary) logger.info(`Summary: ${article.summary}`);
             if (article.published_at) logger.info(`Published At: ${article.published_at}`);
-            if (article.image) logger.info(`Image URL: ${article.image}`);
+            if (article.content) {
+                logger.info(`Article Content:\n${article.content}`);
+            } else {
+                logger.warn('No content scraped for this article.');
+            }
             logger.info('---------------------------------------------');
         });
 
