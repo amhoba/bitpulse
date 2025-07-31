@@ -1,5 +1,6 @@
 import { scrapeCryptoNews } from './cryptoNewsScraper';
 import winston from 'winston';
+import { loadPromptTemplates, getPromptTemplateById, fillPromptTemplate } from './promptTemplates';
 
 const logger = winston.createLogger({
     level: 'info',
@@ -28,6 +29,27 @@ async function main() {
             }
             logger.info('---------------------------------------------');
         });
+
+        const templates = loadPromptTemplates();
+        logger.info('Prompt templates available:');
+        templates.forEach(t =>
+            logger.info(`ID: ${t.id} | Name: ${t.name} | Description: ${t.description}`)
+        );
+
+        // Example: select template by ID (in future, you can make this more intelligent)
+        const selectedTemplateId = 'summarize'; // <-- CHANGE as desired
+        const promptTmpl = getPromptTemplateById(selectedTemplateId);
+        if (!promptTmpl) {
+            logger.error(`Prompt template with ID '${selectedTemplateId}' not found.`);
+            process.exit(1);
+        }
+
+        for (const article of articles) {
+            if (article.content) {
+                const prompt = fillPromptTemplate(promptTmpl, { content: article.content });
+                logger.info(`Generated Prompt for Article "${article.title}":\n${prompt}\n-----`);
+            }
+        }
 
     } catch (error) {
         logger.error(`Error in main execution: ${(error as Error).message}`);
