@@ -11,19 +11,44 @@ export type PromptTemplate = {
 const TITLE_PROMPTS_PATH = path.join(__dirname, '..', 'prompts', 'title');
 const ARTICLE_PROMPTS_PATH = path.join(__dirname, '..', 'prompts', 'article');
 
-// Load all templates from file
-export function loadPromptTemplates(): PromptTemplate[] {
-    const raw = fs.readFileSync(PROMPTS_PATH, 'utf-8');
-    return JSON.parse(raw);
+function loadTemplatesFromDirectory(dirPath: string): PromptTemplate[] {
+    if (!fs.existsSync(dirPath)) return [];
+
+    return fs.readdirSync(dirPath)
+        .filter(file => file.endsWith('.json'))
+        .map(file => {
+            const raw = fs.readFileSync(path.join(dirPath, file), 'utf-8');
+            const parsed = JSON.parse(raw);
+            return {
+                id: parsed.id,
+                name: parsed.name || path.basename(file, '.json'),
+                description: parsed.description,
+                template: parsed.template
+            } as PromptTemplate;
+        });
 }
 
-// Find a template by id
-export function getPromptTemplateById(id: string): PromptTemplate | undefined {
-    const all = loadPromptTemplates();
-    return all.find(t => t.id === id);
+// Load title-specific prompts
+export function loadTitlePromptTemplates(): PromptTemplate[] {
+    return loadTemplatesFromDirectory(TITLE_PROMPTS_PATH);
 }
 
-// Fill in template with content.
+// Load article-specific prompts
+export function loadArticlePromptTemplates(): PromptTemplate[] {
+    return loadTemplatesFromDirectory(ARTICLE_PROMPTS_PATH);
+}
+
+// Get title prompt by ID
+export function getTitlePromptById(id: string): PromptTemplate | undefined {
+    return loadTitlePromptTemplates().find(t => t.id === id);
+}
+
+// Get article prompt by ID
+export function getArticlePromptById(id: string): PromptTemplate | undefined {
+    return loadArticlePromptTemplates().find(t => t.id === id);
+}
+
+// Fill in template with variables
 export function fillPromptTemplate(template: PromptTemplate, vars: Record<string, string>): string {
     let prompt = template.template;
     Object.entries(vars).forEach(([key, value]) => {
