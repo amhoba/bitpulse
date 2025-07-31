@@ -2,14 +2,14 @@ import { chromium, Browser, Page } from 'playwright';
 import winston from 'winston';
 
 export type CryptoNewsArticle = {
-    title: string,
-    url: string,
-    summary?: string,
-    published_at?: string,
-    image?: string,
-    content?: string,      // New: The full body/content of the article
-    author?: string,       // New: Author name
-    page_image?: string,   // New: Main image in the article (if any)
+    title: string;
+    url: string;
+    summary?: string;
+    published_at?: string;
+    image?: string;
+    content?: string;
+    author?: string;
+    page_image?: string;
 };
 
 const logger = winston.createLogger({
@@ -76,18 +76,45 @@ export async function scrapeCryptoNews(): Promise<CryptoNewsArticle[]> {
     }
 }
 
+
+// Helper: Cleans ads & related blocks from post content
+function cleanArticleContent(html: string): string {
+    // Simple: strip out cn-block-related-link, cn-block-summary, or anything else you don't want.
+    // For robust removal, better use a server-side DOM library like cheerio, but Playwright runs in browser context!
+    // So we'll remove those nodes in the browser context before serializing the inner HTML/text.
+
+    return html;
+}
+
+// Scrape title and main body content without ads/related-content blocks
 export async function scrapeArticleContent(page: Page, url: string): Promise<Partial<CryptoNewsArticle>> {
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    // The following selectors are placeholders. After you provide a sample HTML/content,
-    // I will adapt these!
-    const content = await page.$eval('article', el => el.textContent?.trim() ?? '');
-    const author = await page.$eval('.author__name', el => el.textContent?.trim() ?? '');
-    const page_image = await page.$eval('article img', img => (img as HTMLImageElement).src);
+    // Get title
+    const title = await page.$eval('h1.post-detail__title', el => el.textContent?.trim() ?? '');
+
+    // Extract the main <div> for content
+    // We'll remove unwanted nodes with JavaScript before extracting text/HTML.
+    const contentHTML = await page.$eval('div.post-detail__content.blocks', el => {
+        // Remove summary blocks
+        el.querySelectorAll('.cn-block-summary').forEach(e => e.remove());
+        // Remove related links and other unwanted blocks
+        el.querySelectorAll('.cn-block-related-link').forEach(e => e.remove());
+        // Optionally, remove sponsored/posts/ads selectors if you see others
+        // el.querySelectorAll('.adclass, .promo-class').forEach(e => e.remove());
+        // You can also filter further, e.g., remove all <aside> or <iframe> nodes if needed.
+
+        // Return cleaned HTML or cleaned text
+        return el.innerHTML.trim();
+    });
+
+    // You may want plain text (removing all HTML tags), or preserve some structure.
+    // To simply get text:
+    // const contentText = await page.$eval('div.post-detail__content.blocks', el => el.innerText);
 
     return {
-        content,
-        author,
-        page_image,
+        title,           // Useful for consistency check; can omit if scraped earlier
+        content: contentHTML,  // Return HTML (best to handle links, basic formatting)
+        // You can also extract author/main-image here if needed later
     };
 }
