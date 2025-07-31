@@ -1,6 +1,11 @@
 import { chromium, Browser, Page } from 'playwright';
 import winston from 'winston';
 
+export type ArticleImage = {
+    url: string;
+    description?: string;
+};
+
 export type CryptoNewsArticle = {
     title: string;
     url: string;
@@ -10,6 +15,7 @@ export type CryptoNewsArticle = {
     content?: string;
     author?: string;
     page_image?: string;
+    images?: ArticleImage[]; // <-- add this
 };
 
 const logger = winston.createLogger({
@@ -82,23 +88,38 @@ export async function scrapeArticleContent(page: Page, url: string): Promise<Par
     // Get title
     const title = await page.$eval('h1.post-detail__title', el => el.textContent?.trim() ?? '');
 
+    // Parse images: query each <figure> within the article content, extract <img src> and caption.
+    const images = await page.$$eval('div.post-detail__content.blocks figure', figures =>
+        figures.map(figure => {
+            // Find image URL
+            const img = figure.querySelector('img');
+            let url = img?.getAttribute('src') ?? '';
+            // Try to skip invalid/empty/inline/thumbnail images
+            if (!url || url.startsWith('data:')) return null;
+
+            // Find best description
+            let description = img?.getAttribute('alt')?.trim() || '';
+            if (!description) {
+                const figcaption = figure.querySelector('figcaption');
+                if (figcaption) description = figcaption.textContent?.trim() || '';
+            }
+
+            return url ? { url, description } : null;
+        }).filter(Boolean)
+    );
+
     // Clean up the article before extracting text
     const contentText = await page.$eval('div.post-detail__content.blocks', el => {
-        // Remove summary, related links, disclaimer blocks
         el.querySelectorAll('.cn-block-summary, .cn-block-related-link, .cn-block-disclaimer').forEach(e => e.remove());
-        // Remove figure captions and all figure blocks (images), they typically clutter plain text for your use-case
         el.querySelectorAll('figure, figcaption').forEach(e => e.remove());
-        // Optionally remove custom badge classes or very short text-only children (may overlap with actual content—use with care)
-        // Example for token badges, if found:
         el.querySelectorAll('token-badge, .token-badge-container').forEach(e => e.remove());
-
-        // Return clean, human-friendly article text
         return el.innerText.trim();
     });
 
     return {
         title,
         content: contentText,
+        images: images as { url: string; description?: string }[]
     };
 }
 
