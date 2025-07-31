@@ -1,6 +1,7 @@
 import { scrapeCryptoNews } from './cryptoNewsScraper';
 import winston from 'winston';
 import { loadPromptTemplates, getPromptTemplateById, fillPromptTemplate } from './promptTemplates';
+import { callLLM } from './llmClient';
 
 const logger = winston.createLogger({
     level: 'info',
@@ -46,8 +47,14 @@ async function main() {
 
         for (const article of articles) {
             if (article.content) {
-                const prompt = fillPromptTemplate(promptTmpl, { content: article.content });
+                const prompt = fillPromptTemplate(promptTmpl, {
+                    content: article.content,
+                    images: (article.images || []).map(img => img.url).join('\n') // optional handling
+                });
+
+                const result = await callLLM(prompt);
                 logger.info(`Generated Prompt for Article "${article.title}":\n${prompt}\n-----`);
+                logger.info(`LLM Result:\n${result}\n=======================`);
             }
         }
 
