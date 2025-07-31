@@ -9,6 +9,8 @@ import {
     PromptTemplate
 } from './promptTemplates';
 import { callLLM } from './llmClient';
+import fs from 'fs';
+import path from 'path';
 
 const logger = winston.createLogger({
     level: 'info',
@@ -19,6 +21,28 @@ const logger = winston.createLogger({
     ),
     transports: [new winston.transports.Console()],
 });
+
+// Converts an article URL into a kebab-case filename (lowercase a-z only)
+function slugifyUrl(url: string): string {
+    const slug = url
+        .toLowerCase()
+        .replace(/https?:\/\//, '')
+        .replace(/[^a-z]/g, '-') // keep only a-z and replace others with hyphens
+        .replace(/-+/g, '-')     // collapse repeated hyphens
+        .replace(/^-|-$/g, '');  // trim leading/trailing hyphens
+    return slug;
+}
+
+// Writes a Markdown file to the shared Astro directory
+function writeMarkdownFile(filePath: string, title: string, body: string): void {
+    const content = `---
+title: "${title}"
+---
+
+${body.trim()}
+`;
+    fs.writeFileSync(filePath, content, 'utf-8');
+}
 
 // Ask the LLM to pick the best prompt ID from a category
 async function choosePromptId(
@@ -61,6 +85,14 @@ async function main() {
         for (const article of articles) {
             if (!article.content) {
                 logger.warn(`No content for article: ${article.title}`);
+                continue;
+            }
+
+            const slug = slugifyUrl(article.url);
+            const outputPath = path.join('/shared/article', `${slug}.md`);
+
+            if (fs.existsSync(outputPath)) {
+                logger.info(`Skipping "${article.title}" — markdown file already exists.`);
                 continue;
             }
 
@@ -112,8 +144,11 @@ async function main() {
             });
 
             const titleLLMOutput = await callLLM(filledTitlePrompt);
-            logger.info(`Generated SEO title using prompt '${selectedTitlePromptId}':\n${titleLLMOutput}`);
+            logger.info(`Generated SEO title using prompt '${selectedTitlePromptId}': ${titleLLMOutput}`);
 
+            writeMarkdownFile(outputPath, titleLLMOutput, articleLLMOutput);
+
+            logger.info(`✅ Wrote markdown: ${outputPath}`);
             logger.info('--------------------------------------------------\n');
         }
 
