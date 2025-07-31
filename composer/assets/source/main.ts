@@ -1,12 +1,14 @@
+import winston from 'winston';
+import { scrapeCryptoNews } from './cryptoNewsScraper';
 import {
     loadArticlePromptTemplates,
+    loadTitlePromptTemplates,
     getArticlePromptById,
-    fillPromptTemplate
+    getTitlePromptById,
+    fillPromptTemplate,
+    PromptTemplate
 } from './promptTemplates';
-
 import { callLLM } from './llmClient';
-import { scrapeCryptoNews } from './cryptoNewsScraper';
-import winston from 'winston';
 
 const logger = winston.createLogger({
     level: 'info',
@@ -18,50 +20,101 @@ const logger = winston.createLogger({
     transports: [new winston.transports.Console()],
 });
 
+// Ask the LLM to pick the best prompt ID from a category
+async function choosePromptId(
+    category: 'article' | 'title',
+    templates: PromptTemplate[],
+    article: { title: string; content?: string; images?: string[] }
+): Promise<string | undefined> {
+    const templateList = templates.map(t => `- ${t.id}: ${t.description}`).join('\n');
+    const imagesText = (article.images || []).join('\n');
+
+    const chooserPrompt = `
+You are a system that selects the best prompt template ID for the task.
+
+Available ${category} prompts:
+${templateList}
+
+Article Title: ${article.title}
+Content:
+${article.content || '[No content]'}
+Images:
+${imagesText}
+
+Respond with the most suitable prompt ID only (e.g. "summarize").
+    `.trim();
+
+    const result = await callLLM(chooserPrompt);
+    const match = result.match(/^[a-zA-Z0-9_-]+/); // Get first word/ID
+    return match ? match[0] : undefined;
+}
+
 async function main() {
     try {
         logger.info('Starting crypto.news scraping service...');
         const articles = await scrapeCryptoNews();
-        logger.info('Scraping completed. Articles found: ' + articles.length);
+        logger.info(`Scraping completed. Articles found: ${articles.length}`);
 
-        articles.forEach(article => {
-            logger.info(`Title: ${article.title}`);
-            logger.info(`URL: ${article.url}`);
-            if (article.published_at) logger.info(`Published At: ${article.published_at}`);
-            if (article.content) {
-                logger.info(`Article Content:\n${article.content}`);
-            } else {
-                logger.warn('No content scraped for this article.');
-            }
-            logger.info('---------------------------------------------');
-        });
-
-        // Load article prompts and choose one
-        const templates = loadArticlePromptTemplates();
-        logger.info('Prompt templates available:');
-        templates.forEach(t =>
-            logger.info(`ID: ${t.id} | Name: ${t.name} | Description: ${t.description}`)
-        );
-
-        const selectedTemplateId = 'summarize';
-        const promptTmpl = getArticlePromptById(selectedTemplateId);
-
-        if (!promptTmpl) {
-            logger.error(`Prompt template with ID '${selectedTemplateId}' not found.`);
-            process.exit(1);
-        }
+        const articlePrompts = loadArticlePromptTemplates();
+        const titlePrompts = loadTitlePromptTemplates();
 
         for (const article of articles) {
-            if (article.content) {
-                const prompt = fillPromptTemplate(promptTmpl, {
-                    content: article.content,
-                    images: (article.images || []).map(img => img.url).join('\n')
-                });
-
-                const result = await callLLM(prompt);
-                logger.info(`Generated Prompt for Article "${article.title}":\n${prompt}\n-----`);
-                logger.info(`LLM Result:\n${result}\n=======================`);
+            if (!article.content) {
+                logger.warn(`No content for article: ${article.title}`);
+                continue;
             }
+
+            const imageUrls = (article.images || []).map(img => img.url);
+
+            // 1. Choose article prompt
+            const selectedArticlePromptId = await choosePromptId('article', articlePrompts, {
+                title: article.title,
+                content: article.content,
+                images: imageUrls
+            });
+
+            const articlePrompt = selectedArticlePromptId
+                ? getArticlePromptById(selectedArticlePromptId)
+                : undefined;
+
+            if (!articlePrompt) {
+                logger.warn(`No valid article prompt selected for "${article.title}"`);
+                continue;
+            }
+
+            const filledArticlePrompt = fillPromptTemplate(articlePrompt, {
+                content: article.content,
+                images: imageUrls.join('\n')
+            });
+
+            const articleLLMOutput = await callLLM(filledArticlePrompt);
+            logger.info(`Generated article content using prompt '${selectedArticlePromptId}':\n${articleLLMOutput}`);
+
+            // 2. Choose title prompt
+            const selectedTitlePromptId = await choosePromptId('title', titlePrompts, {
+                title: article.title,
+                content: article.content,
+                images: imageUrls
+            });
+
+            const titlePrompt = selectedTitlePromptId
+                ? getTitlePromptById(selectedTitlePromptId)
+                : undefined;
+
+            if (!titlePrompt) {
+                logger.warn(`No valid title prompt selected for "${article.title}"`);
+                continue;
+            }
+
+            const filledTitlePrompt = fillPromptTemplate(titlePrompt, {
+                content: article.content,
+                images: imageUrls.join('\n')
+            });
+
+            const titleLLMOutput = await callLLM(filledTitlePrompt);
+            logger.info(`Generated SEO title using prompt '${selectedTitlePromptId}':\n${titleLLMOutput}`);
+
+            logger.info('--------------------------------------------------\n');
         }
 
     } catch (error) {
