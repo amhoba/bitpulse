@@ -11,6 +11,7 @@ services:
       target: dev
     volumes:
       - ../composer/assets:/assets
+      - shared-article-content:/shared/article:rw
     networks:
       - bitpulse
 
@@ -26,6 +27,7 @@ services:
       target: dev
     volumes:
       - ../astro/assets:/assets
+      - shared-article-content:/assets/src/content/article:rw
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.astro.rule=PathPrefix(`/`)"
@@ -60,3 +62,11 @@ services:
 networks:
   bitpulse:
     driver: bridge
+
+volumes:
+  shared-article-content:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/../astro/assets/src/content/article
