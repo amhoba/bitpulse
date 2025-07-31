@@ -157,4 +157,20 @@ async function main() {
     }
 }
 
-main();
+async function runCycle() {
+    logger.info(`🔄 Starting new content generation cycle at ${new Date().toISOString()}`);
+    await main();
+    logger.info(`✅ Finished cycle at ${new Date().toISOString()}`);
+}
+
+async function scheduleForever(intervalMinutes: number) {
+    const intervalMs = intervalMinutes * 60 * 1000;
+    while (true) {
+        await runCycle();
+        logger.info(`⏳ Waiting ${intervalMinutes} minutes before next cycle...`);
+        await new Promise(res => setTimeout(res, intervalMs));
+    }
+}
+
+// Start the recurring loop
+scheduleForever(10);
