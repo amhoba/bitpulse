@@ -8,7 +8,8 @@ export type PromptTemplate = {
     template: string;
 };
 
-const PROMPTS_PATH = path.join(__dirname, '..', 'prompts', 'article_prompts.json');
+const TITLE_PROMPTS_PATH = path.join(__dirname, '..', 'prompts', 'title');
+const ARTICLE_PROMPTS_PATH = path.join(__dirname, '..', 'prompts', 'article');
 
 // Load all templates from file
 export function loadPromptTemplates(): PromptTemplate[] {
