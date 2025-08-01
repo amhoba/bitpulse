@@ -26,7 +26,7 @@ const logger = winston.createLogger({
 function slugifyUrl(url: string): string {
     const slug = url
         .toLowerCase()
-        .replace(/https?:\/\//, '')
+        .replace(/https?:\/\/(www\.)?crypto\.news\//, '') // remove 'https://crypto.news/' or 'http://www.crypto.news/'
         .replace(/[^a-z]/g, '-') // keep only a-z and replace others with hyphens
         .replace(/-+/g, '-')     // collapse repeated hyphens
         .replace(/^-|-$/g, '');  // trim leading/trailing hyphens
