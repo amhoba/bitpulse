@@ -8,7 +8,7 @@ import {
     fillPromptTemplate,
     PromptTemplate
 } from './promptTemplates';
-import { callLLM } from './llmClient';
+import { callLLM } from './llmClient.mock';
 import fs from 'fs';
 import path from 'path';
 
