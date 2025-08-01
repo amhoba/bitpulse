@@ -2,12 +2,13 @@
 	"dependencies": {
 		"@types/node": "^24.1.0",
 		"node-fetch": "^3.3.2",
+		"nodemon": "^3.1.10",
 		"playwright": "^1.54.1",
 		"tsx": "^4.20.3",
 		"typescript": "^5.8.3",
 		"winston": "^3.17.0"
 	},
 	"scripts": {
-		"start": "tsx source/main.ts"
+		"dev": "nodemon --exec 'tsx source/main.ts' ;"
 	}
 }
