@@ -15,8 +15,8 @@ const logger = winston.createLogger({
 });
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_API_KEY = process.env.GROQ_API_KEY || ''; // Ensure this is set securely
-const MODEL = 'llama3-70b-8192'; // or 'llama3-70b-8192', etc.
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const MODEL = 'llama3-70b-8192';
 
 export async function callLLM(prompt: string): Promise<string> {
     if (!GROQ_API_KEY) {
@@ -34,7 +34,6 @@ export async function callLLM(prompt: string): Promise<string> {
     };
 
     let attempt = 0;
-    let delay = 1000; // start with 1 second
 
     while (true) {
         attempt++;
@@ -53,25 +52,50 @@ export async function callLLM(prompt: string): Promise<string> {
 
             const responseText = await response.text();
 
+            if (response.status === 429) {
+                // Rate limit hit — check Retry-After header
+                const retryAfter = response.headers.get('retry-after');
+                const waitSeconds = retryAfter ? parseFloat(retryAfter) : 10; // fallback wait
+                logger.warn(`⚠️ Rate limit exceeded (429). Waiting ${waitSeconds}s before retry...`);
+                await new Promise(res => setTimeout(res, waitSeconds * 1000));
+                continue;
+            }
+
             if (!response.ok) {
-                logger.warn(`⚠️ Groq API error (attempt ${attempt}): ${response.status} ${response.statusText}`);
+                logger.warn(`⚠️ LLM API error: ${response.status} ${response.statusText}`);
                 logger.warn(`Response Body: ${responseText}`);
+                // Retry on server-side errors
+                if (response.status >= 500 && response.status < 600) {
+                    logger.info('⏳ Retrying after 3 seconds due to server error...');
+                    await new Promise(res => setTimeout(res, 3000));
+                    continue;
+                }
                 throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
+            }
+
+            // Log rate limit status headers if present
+            const limitHeaders = [
+                'x-ratelimit-remaining-requests',
+                'x-ratelimit-remaining-tokens',
+                'x-ratelimit-reset-requests',
+                'x-ratelimit-reset-tokens'
+            ];
+            for (const h of limitHeaders) {
+                const value = response.headers.get(h);
+                if (value) logger.info(`📊 ${h}: ${value}`);
             }
 
             const json = JSON.parse(responseText);
             const content = json.choices?.[0]?.message?.content || '[No content returned]';
 
-            logger.info(`✅ LLM responded successfully on attempt ${attempt}.`);
+            logger.info(`✅ LLM responded successfully on attempt ${attempt}`);
             logger.debug(`Response Content: ${content}`);
-
             return content;
 
-        } catch (error) {
-            logger.error(`❌ LLM call failed on attempt ${attempt}: ${(error as Error).message}`);
-            logger.info(`⏳ Retrying in ${delay / 1000} seconds...`);
-            await new Promise(res => setTimeout(res, delay));
-            delay = Math.min(delay * 2, 60000); // Exponential backoff capped at 60 seconds
+        } catch (err) {
+            logger.error(`❌ LLM call failed (attempt ${attempt}): ${(err as Error).message}`);
+            logger.info(`⏳ Waiting 5 seconds before retrying...`);
+            await new Promise(res => setTimeout(res, 5000));
         }
     }
 }
