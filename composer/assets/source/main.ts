@@ -82,6 +82,9 @@ async function main() {
         const articlePrompts = loadArticlePromptTemplates();
         const titlePrompts = loadTitlePromptTemplates();
 
+        logger.info(`article prompts:`, articlePrompts)
+        logger.info(`title prompts:`, titlePrompts)
+
         for (const article of articles) {
             if (!article.content) {
                 logger.warn(`No content for article: ${article.title}`);
@@ -91,12 +94,16 @@ async function main() {
             const slug = slugifyUrl(article.url);
             const outputPath = path.join('/shared/article', `${slug}.md`);
 
+            logger.info(`slug:`, slug, `outputPath:`, outputPath)
+
             if (fs.existsSync(outputPath)) {
                 logger.info(`Skipping "${article.title}" — markdown file already exists.`);
                 continue;
             }
 
             const imageUrls = (article.images || []).map(img => img.url);
+
+            logger.info(`imageUrls:`, imageUrls)
 
             // 1. Choose article prompt
             const selectedArticlePromptId = await choosePromptId('article', articlePrompts, {
@@ -105,9 +112,13 @@ async function main() {
                 images: imageUrls
             });
 
+            logger.info(`selectedArticlePromptId:`, selectedArticlePromptId)
+
             const articlePrompt = selectedArticlePromptId
                 ? getArticlePromptById(selectedArticlePromptId)
                 : undefined;
+
+            logger.info(`articlePrompt:`, articlePrompt)
 
             if (!articlePrompt) {
                 logger.warn(`No valid article prompt selected for "${article.title}"`);
@@ -119,6 +130,8 @@ async function main() {
                 images: imageUrls.join('\n')
             });
 
+            logger.info(`filledArticlePrompt:`, filledArticlePrompt)
+
             const articleLLMOutput = await callLLM(filledArticlePrompt);
             logger.info(`Generated article content using prompt '${selectedArticlePromptId}':\n${articleLLMOutput}`);
 
@@ -129,9 +142,13 @@ async function main() {
                 images: imageUrls
             });
 
+            logger.info(`selectedTitlePromptId:`, selectedTitlePromptId)
+
             const titlePrompt = selectedTitlePromptId
                 ? getTitlePromptById(selectedTitlePromptId)
                 : undefined;
+
+            logger.info(`titlePrompt`, titlePrompt)
 
             if (!titlePrompt) {
                 logger.warn(`No valid title prompt selected for "${article.title}"`);
@@ -142,6 +159,8 @@ async function main() {
                 content: article.content,
                 images: imageUrls.join('\n')
             });
+
+            logger.info(`filledTitlePrompt:`, filledTitlePrompt)
 
             const titleLLMOutput = await callLLM(filledTitlePrompt);
             logger.info(`Generated SEO title using prompt '${selectedTitlePromptId}': ${titleLLMOutput}`);
