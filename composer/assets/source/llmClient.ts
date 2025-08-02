@@ -16,7 +16,7 @@ const logger = winston.createLogger({
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = process.env.GROQ_API_KEY || ''; // Ensure this is set securely
-const MODEL = 'mixtral-8x7b-32768'; // or 'llama3-70b-8192', etc.
+const MODEL = 'llama3-70b-8192'; // or 'llama3-70b-8192', etc.
 
 export async function callLLM(prompt: string): Promise<string> {
     if (!GROQ_API_KEY) {
