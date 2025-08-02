@@ -63,7 +63,7 @@ export async function scrapeCryptoNews(): Promise<CryptoNewsArticle[]> {
         for (const article of articles) {
             try {
                 const fullUrl = article.url.startsWith('http') ? article.url : `https://crypto.news${article.url}`;
-                logger.info(`Scraping content for: ${article.title}`);
+                logger.info(`Scraping content for: ${article.title} (${fullUrl})`);
                 const articlePage = await context.newPage();
                 const detail = await scrapeArticleContent(articlePage, fullUrl);
                 Object.assign(article, detail);

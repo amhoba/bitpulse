@@ -78,6 +78,7 @@ async function main() {
         logger.info('Starting crypto.news scraping service...');
         const articles = await scrapeCryptoNews();
         logger.info(`Scraping completed. Articles found: ${articles.length}`);
+        logger.info(`articles:`, articles);
 
         const articlePrompts = loadArticlePromptTemplates();
         const titlePrompts = loadTitlePromptTemplates();
