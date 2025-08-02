@@ -24,9 +24,6 @@ export async function callLLM(prompt: string): Promise<string> {
         throw new Error('GROQ_API_KEY environment variable is not set.');
     }
 
-    logger.info(`🔍 Sending prompt to LLM (model: ${MODEL})`);
-    logger.debug(`Prompt: ${prompt.length > 500 ? prompt.slice(0, 500) + '...' : prompt}`);
-
     const requestPayload = {
         model: MODEL,
         messages: [
@@ -36,33 +33,45 @@ export async function callLLM(prompt: string): Promise<string> {
         temperature: 0.7
     };
 
-    try {
-        const response = await fetch(GROQ_API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestPayload)
-        });
+    let attempt = 0;
+    let delay = 1000; // start with 1 second
 
-        const responseText = await response.text();
+    while (true) {
+        attempt++;
+        logger.info(`🔍 Attempt ${attempt}: Sending prompt to LLM`);
+        logger.debug(`Prompt: ${prompt.length > 500 ? prompt.slice(0, 500) + '...' : prompt}`);
 
-        if (!response.ok) {
-            logger.error(`❌ Groq API error: ${response.status} ${response.statusText}`);
-            logger.error(`Response Body: ${responseText}`);
-            throw new Error(`Groq API error: ${response.status} ${response.statusText} — ${responseText}`);
+        try {
+            const response = await fetch(GROQ_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestPayload)
+            });
+
+            const responseText = await response.text();
+
+            if (!response.ok) {
+                logger.warn(`⚠️ Groq API error (attempt ${attempt}): ${response.status} ${response.statusText}`);
+                logger.warn(`Response Body: ${responseText}`);
+                throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
+            }
+
+            const json = JSON.parse(responseText);
+            const content = json.choices?.[0]?.message?.content || '[No content returned]';
+
+            logger.info(`✅ LLM responded successfully on attempt ${attempt}.`);
+            logger.debug(`Response Content: ${content}`);
+
+            return content;
+
+        } catch (error) {
+            logger.error(`❌ LLM call failed on attempt ${attempt}: ${(error as Error).message}`);
+            logger.info(`⏳ Retrying in ${delay / 1000} seconds...`);
+            await new Promise(res => setTimeout(res, delay));
+            delay = Math.min(delay * 2, 60000); // Exponential backoff capped at 60 seconds
         }
-
-        const json = JSON.parse(responseText);
-        const content = json.choices?.[0]?.message?.content || '[No content returned]';
-
-        logger.info(`✅ LLM responded successfully.`);
-        logger.debug(`Response Content: ${content}`);
-
-        return content;
-    } catch (error) {
-        logger.error(`💥 Failed to call LLM: ${(error as Error).message}`);
-        throw error;
     }
 }
