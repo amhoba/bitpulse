@@ -78,13 +78,13 @@ async function main() {
         logger.info('Starting crypto.news scraping service...');
         const articles = await scrapeCryptoNews();
         logger.info(`Scraping completed. Articles found: ${articles.length}`);
-        logger.info(`articles:`, articles);
+        logger.info({ message: `articles:`, articles });
 
         const articlePrompts = loadArticlePromptTemplates();
         const titlePrompts = loadTitlePromptTemplates();
 
-        logger.info(`article prompts:`, articlePrompts)
-        logger.info(`title prompts:`, titlePrompts)
+        logger.info({ message: `article prompts:`, articlePrompts })
+        logger.info({ message: `title prompts:`, titlePrompts })
 
         for (const article of articles) {
             if (!article.content) {
@@ -95,7 +95,7 @@ async function main() {
             const slug = slugifyUrl(article.url);
             const outputPath = path.join('/shared/article', `${slug}.md`);
 
-            logger.info(`slug:`, slug, `outputPath:`, outputPath)
+            logger.info({ message: `slug and outputPath:`, slug, outputPath })
 
             if (fs.existsSync(outputPath)) {
                 logger.info(`Skipping "${article.title}" — markdown file already exists.`);
@@ -104,7 +104,7 @@ async function main() {
 
             const imageUrls = (article.images || []).map(img => img.url);
 
-            logger.info(`imageUrls:`, imageUrls)
+            logger.info({ message: `imageUrls:`, imageUrls })
 
             // 1. Choose article prompt
             const selectedArticlePromptId = await choosePromptId('article', articlePrompts, {
@@ -113,13 +113,13 @@ async function main() {
                 images: imageUrls
             });
 
-            logger.info(`selectedArticlePromptId:`, selectedArticlePromptId)
+            logger.info({ message: `selectedArticlePromptId:`, selectedArticlePromptId })
 
             const articlePrompt = selectedArticlePromptId
                 ? getArticlePromptById(selectedArticlePromptId)
                 : undefined;
 
-            logger.info(`articlePrompt:`, articlePrompt)
+            logger.info({ message: `articlePrompt:`, articlePrompt })
 
             if (!articlePrompt) {
                 logger.warn(`No valid article prompt selected for "${article.title}"`);
@@ -131,7 +131,7 @@ async function main() {
                 images: imageUrls.join('\n')
             });
 
-            logger.info(`filledArticlePrompt:`, filledArticlePrompt)
+            logger.info({message: `filledArticlePrompt:`, filledArticlePrompt})
 
             const articleLLMOutput = await callLLM(filledArticlePrompt);
             logger.info(`Generated article content using prompt '${selectedArticlePromptId}':\n${articleLLMOutput}`);
@@ -143,13 +143,13 @@ async function main() {
                 images: imageUrls
             });
 
-            logger.info(`selectedTitlePromptId:`, selectedTitlePromptId)
+            logger.info({message: `selectedTitlePromptId:`, selectedTitlePromptId})
 
             const titlePrompt = selectedTitlePromptId
                 ? getTitlePromptById(selectedTitlePromptId)
                 : undefined;
 
-            logger.info(`titlePrompt`, titlePrompt)
+            logger.info({message: `titlePrompt`, titlePrompt})
 
             if (!titlePrompt) {
                 logger.warn(`No valid title prompt selected for "${article.title}"`);
@@ -161,7 +161,7 @@ async function main() {
                 images: imageUrls.join('\n')
             });
 
-            logger.info(`filledTitlePrompt:`, filledTitlePrompt)
+            logger.info({message: `filledTitlePrompt:`, filledTitlePrompt})
 
             const titleLLMOutput = await callLLM(filledTitlePrompt);
             logger.info(`Generated SEO title using prompt '${selectedTitlePromptId}': ${titleLLMOutput}`);
