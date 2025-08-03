@@ -33,15 +33,34 @@ function slugifyUrl(url: string): string {
     return slug;
 }
 
-// Writes a Markdown file to the shared Astro directory
-function writeMarkdownFile(filePath: string, title: string, body: string): void {
-    const content = `---
-title: "${title}"
----
+function writeMarkdownFile(
+    filePath: string,
+    rawTitle: string,
+    body: string,
+    description: string,
+    category: string,
+    tags: string[]
+): void {
+    const today = new Date().toISOString().split('T')[0];
 
-${body.trim()}
+    // Remove surrounding quotes from title if present
+    let title = rawTitle.trim();
+    if (title.startsWith('"') && title.endsWith('"')) {
+        title = title.slice(1, -1).trim();
+    }
+
+    const frontmatter = `---
+title: "${title}"
+description: "${description}"
+pubDate: ${today}
+author: "Amir Hossein Baghernezhad"
+category: "${category}"
+tags: [${tags.map(t => `"${t}"`).join(', ')}]
+---
 `;
-    fs.writeFileSync(filePath, content, 'utf-8');
+
+    const finalContent = frontmatter + '\n' + body.trim();
+    fs.writeFileSync(filePath, finalContent, 'utf-8');
 }
 
 // Ask the LLM to pick the best prompt ID from a category
@@ -165,7 +184,12 @@ async function main() {
             const titleLLMOutput = await callLLM(filledTitlePrompt);
             logger.info(`Generated SEO title using prompt '${selectedTitlePromptId}': ${titleLLMOutput}`);
 
-            writeMarkdownFile(outputPath, titleLLMOutput, articleLLMOutput);
+            // Determine fallback or default values
+            const description = article.summary || article.content?.slice(0, 150).replace(/\s+/g, ' ') || '';
+            const category = 'Crypto'; // Static default
+            const tags = slug.split('-').filter(w => w.length > 2); // Basic word-based tags
+
+            writeMarkdownFile(outputPath, titleLLMOutput, articleLLMOutput, description, category, tags);
 
             logger.info(`✅ Wrote markdown: ${outputPath}`);
             logger.info('--------------------------------------------------\n');
