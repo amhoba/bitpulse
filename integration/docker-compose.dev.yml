@@ -30,9 +30,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.astro.rule=PathPrefix(`/astro`)"
+      - "traefik.http.middlewares.astro-stripprefix.stripprefix.prefixes=/astro"
       - "traefik.http.middlewares.astro-set-header.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN}"
       - "traefik.http.middlewares.astro-set-header.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.routers.astro.middlewares=astro-set-header"
+      - "traefik.http.routers.astro.middlewares=astro-stripprefix,astro-set-header"
     networks:
       - bitpulse
 
