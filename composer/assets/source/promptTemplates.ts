@@ -51,8 +51,11 @@ export function getArticlePromptById(id: string): PromptTemplate | undefined {
 // Fill in template with variables
 export function fillPromptTemplate(template: PromptTemplate, vars: Record<string, string>): string {
     let prompt = template.template;
+
     Object.entries(vars).forEach(([key, value]) => {
-        prompt = prompt.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        const wrapped = `"""\n${value.trim()}\n"""`;
+        prompt = prompt.replace(new RegExp(`{{${key}}}`, 'g'), wrapped);
     });
+
     return prompt;
 }
