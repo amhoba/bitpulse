@@ -58,6 +58,19 @@ services:
     networks:
       - bitpulse
 
+  nginx:
+    restart: always
+    build:
+      context: ../nginx
+      target: dev
+    volumes:
+      - ../nginx/conf:/etc/nginx/conf.d:ro
+    environment:
+      - TZ=UTC
+      - STAGE=dev
+    networks:
+      - bitpulse
+
 networks:
   bitpulse:
     driver: bridge
