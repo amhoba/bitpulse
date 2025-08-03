@@ -1,6 +1,5 @@
 {
-    "id": "seo_title",
-    "description": "Generate an SEO-friendly, attention-grabbing title for an article about cryptocurrencies. Use information and key insights from the main article and consider its images.",
-    "template": "Write an SEO-optimized title for this article:\n{{content}}\n\nImages:\n{{images}}"
-  }
-  
+  "id": "seo_title",
+  "description": "Generate an SEO-friendly, attention-grabbing title for an article about cryptocurrencies. Use information and key insights from the main article and consider its images.",
+  "template": "Generate an SEO-optimized title (only the title text, no preamble or explanation) for this article:\n\n{{content}}\n\nImages:\n{{images}}\n\nOnly return the final title text."
+}

@@ -1,6 +1,0 @@
-{
-    "id": "summarize",
-    "description": "Summarize the full article in three engaging sentences suitable for a news website audience.",
-    "template": "Summarize the article in three sentences:\n{{content}}\n\nImages:\n{{images}}"
-  }
-  
