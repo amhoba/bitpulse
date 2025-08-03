@@ -27,7 +27,7 @@ def setup_typer_app(base_command: str):
 
     @app.command()
     def setup():
-        os.system(f"{base_command} up setup")
+        os.system(f"mkdir ../astro/assets/dist")
 
 
     @app.command()
