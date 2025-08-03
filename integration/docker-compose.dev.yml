@@ -29,7 +29,7 @@ services:
       - ../astro/assets:/assets
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.astro.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.astro.rule=PathPrefix(`/astro`)"
       - "traefik.http.middlewares.astro-set-header.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN}"
       - "traefik.http.middlewares.astro-set-header.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.routers.astro.middlewares=astro-set-header"
@@ -65,9 +65,13 @@ services:
       target: dev
     volumes:
       - ../nginx/conf:/etc/nginx/conf.d:ro
+      - ../astro/assets/dist:/usr/share/nginx/html:ro
     environment:
       - TZ=UTC
       - STAGE=dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=PathPrefix(`/`)"
     networks:
       - bitpulse
 
