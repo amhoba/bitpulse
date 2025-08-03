@@ -65,7 +65,7 @@ ${article.content || '[No content]'}
 Images:
 ${imagesText}
 
-Respond with the most suitable prompt ID only (e.g. "summarize").
+Respond ONLY with the ID of the most suitable prompt. No explanations. No formatting. Example: summarize
     `.trim();
 
     const result = await callLLM(chooserPrompt);
