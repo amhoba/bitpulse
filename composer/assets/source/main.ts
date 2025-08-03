@@ -192,4 +192,4 @@ async function scheduleForever(intervalMinutes: number) {
 }
 
 // Start the recurring loop
-scheduleForever(10);
+scheduleForever(60);
