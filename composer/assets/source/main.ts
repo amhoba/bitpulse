@@ -186,8 +186,10 @@ async function main() {
 
             // Determine fallback or default values
             const description = article.summary || article.content?.slice(0, 150).replace(/\s+/g, ' ') || '';
-            const category = 'Crypto'; // Static default
-            const tags = slug.split('-').filter(w => w.length > 2); // Basic word-based tags
+            const category = 'Crypto';
+            const tags = article.tags && article.tags.length > 0
+                ? article.tags.map(tag => tag.toLowerCase().replace(/\s+/g, '-'))
+                : slug.split('-').filter(w => w.length > 2);
 
             writeMarkdownFile(outputPath, titleLLMOutput, articleLLMOutput, description, category, tags);
 

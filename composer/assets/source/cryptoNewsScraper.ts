@@ -9,13 +9,14 @@ export type ArticleImage = {
 export type CryptoNewsArticle = {
     title: string;
     url: string;
-    summary?: string;
+    summary?: string; // <- this will now be populated by <meta name="description">
     published_at?: string;
     image?: string;
     content?: string;
     author?: string;
     page_image?: string;
-    images?: ArticleImage[]; // <-- add this
+    images?: ArticleImage[];
+    tags?: string[]; // <-- NEW: extracted from <meta property="article:tag">
 };
 
 const logger = winston.createLogger({
@@ -88,6 +89,18 @@ export async function scrapeArticleContent(page: Page, url: string): Promise<Par
     // Get title
     const title = await page.$eval('h1.post-detail__title', el => el.textContent?.trim() ?? '');
 
+    // Extract meta description
+    const description = await page.$eval(
+        'meta[name="description"]',
+        el => el.getAttribute('content') || ''
+    ).catch(() => '');
+
+    // Extract tags from <meta property="article:tag">
+    const tags = await page.$$eval(
+        'meta[property="article:tag"]',
+        metaTags => metaTags.map(tag => tag.getAttribute('content') || '').filter(Boolean)
+    );
+
     // Parse images: query each <figure> within the article content, extract <img src> and caption.
     const images = await page.$$eval('div.post-detail__content.blocks figure', figures =>
         figures.map(figure => {
@@ -119,7 +132,9 @@ export async function scrapeArticleContent(page: Page, url: string): Promise<Par
     return {
         title,
         content: contentText,
-        images: images as { url: string; description?: string }[]
+        images: images as { url: string; description?: string }[],
+        summary: description,
+        tags
     };
 }
 
