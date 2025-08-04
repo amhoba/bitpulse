@@ -1,2 +1,4 @@
+assets/.astro
 assets/.pnpm-store
+assets/dist
 assets/node_modules

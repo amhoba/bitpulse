@@ -11,3 +11,5 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
 #
 
 FROM dev AS prod
+
+ADD conf/ /etc/nginx/conf.d/

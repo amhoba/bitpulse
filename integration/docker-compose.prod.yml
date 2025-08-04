@@ -1,110 +1,34 @@
 services:
-  frontend:
+  composer:
     restart: always
     env_file:
-      - ../frontend/.env
+      - ../composer/.env
     environment:
       - TZ=UTC
       - STAGE=prod
     build:
-      context: ../frontend
+      context: ../composer
       target: prod
-      args:
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-        CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`clipfinity.space`) && PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.tls.certResolver=myresolver"
-      - "traefik.http.middlewares.frontend-set-header.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN}"
-      - "traefik.http.middlewares.frontend-set-header.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.routers.frontend.middlewares=frontend-set-header"
-    networks:
-      - clipfinity
-
-  backend:
-    restart: always
-    depends_on:
-      database:
-        condition: service_healthy
-    env_file:
-      - ../backend/.env
-    environment:
-      - TZ=UTC
-      - STAGE=prod
-    build:
-      context: ../backend
-      target: prod
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`clipfinity.space`) && PathPrefix(`/backend`)"
-      - "traefik.http.routers.backend.tls=true"
-      - "traefik.http.routers.backend.tls.certResolver=myresolver"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend"
-      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
-    networks:
-      - clipfinity
-
-  minio:
-    restart: always
     volumes:
-      - minio_data:/data
-    env_file:
-      - ../minio/.env
-    environment:
-      - TZ=UTC
-      - STAGE=prod
-    build:
-      context: ../minio
-      target: prod
-    ports:
-      - "127.0.0.1:8002:9001"   # Console UI
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minio.rule=Host(`clipfinity.space`) && PathPrefix(`/minio`)"
-      - "traefik.http.routers.minio.tls=true"
-      - "traefik.http.routers.minio.tls.certResolver=myresolver"
-      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
-      - "traefik.http.middlewares.minio-set-host.headers.customrequestheaders.Host=minio:9000"
-      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-set-host"
+      - astro_articles:/shared/article:rw
     networks:
-      - clipfinity
+      - bitpulse
 
-  database:
+  astro:
     restart: always
-    volumes:
-      - database_pgdata:/var/lib/postgresql/data
     env_file:
-      - ../database/.env
+      - ../astro/.env
     environment:
       - TZ=UTC
       - STAGE=prod
     build:
-      context: ../database
+      context: ../astro
       target: prod
-    networks:
-      - clipfinity
-
-  pgadmin:
-    restart: always
     volumes:
-      - ../pgadmin/servers.json:/pgadmin4/servers.json
-    ports:
-      - "127.0.0.1:8001:80"
-    env_file:
-      - ../pgadmin/.env
-    environment:
-      - TZ=UTC
-      - STAGE=prod
-    build:
-      context: ../pgadmin
-      target: prod
-    depends_on:
-      database:
-        condition: service_healthy
+      - astro_articles:/assets/src/content/article
+      - astro_dist:/assets/dist
     networks:
-      - clipfinity
+      - bitpulse
 
   gateway:
     restart: always
@@ -125,13 +49,36 @@ services:
       context: ../gateway
       target: prod
     networks:
-      - clipfinity
+      - bitpulse
+
+  nginx:
+    restart: always
+    build:
+      context: ../nginx
+      target: prod
+    volumes:
+      - astro_dist:/usr/share/nginx/html:rw
+    environment:
+      - TZ=UTC
+      - STAGE=prod
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`bitpulse.online`) && PathPrefix(`/`)"
+      - "traefik.http.routers.nginx.tls=true"
+      - "traefik.http.routers.nginx.tls.certResolver=myresolver"
+    networks:
+      - bitpulse
 
 networks:
-  clipfinity:
+  bitpulse:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
 
 volumes:
-  database_pgdata:
-  minio_data:
+  astro_articles:
+  astro_dist:
   traefik_acme_storage:
