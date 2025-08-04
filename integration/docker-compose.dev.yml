@@ -27,13 +27,8 @@ services:
       target: dev
     volumes:
       - ../astro/assets:/assets
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.astro.rule=PathPrefix(`/astro`)"
-      - "traefik.http.middlewares.astro-stripprefix.stripprefix.prefixes=/astro"
-      - "traefik.http.middlewares.astro-set-header.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN}"
-      - "traefik.http.middlewares.astro-set-header.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.routers.astro.middlewares=astro-stripprefix,astro-set-header"
+    ports:
+      - "3000:3000"
     networks:
       - bitpulse
 
