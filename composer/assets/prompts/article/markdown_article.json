@@ -1,5 +1,5 @@
 {
   "id": "markdown_article",
   "description": "Generate a structured Markdown article (~2000 words max) with embedded images. Use only the content and images provided.",
-  "template": "Using the content and image references below, write a rich, engaging, and structured article in **Markdown** format.\n\nRequirements:\n- Do NOT include any explanations or preamble.\n- Do NOT write 'Here is...'\n- Format as valid markdown.\n- Use multiple short paragraphs.\n- Embed images in context using markdown like `![alt](url)`.\n- Max length: ~2000 words.\n- If there are any occurrences of `crypto.news` then replace it with `bitpulse`.\n\nContent:\n{{content}}\n\nImages:\n{{images}}\n\nBegin article below:"
+  "template": "Using the content and image references below, write a rich, engaging, and structured article in **Markdown** format.\n\nRequirements:\n- Do NOT include any explanations or preamble.\n- Do NOT write 'Here is...'\n- Format as valid markdown.\n- Use multiple short paragraphs.\n- Embed images in context using markdown like `![alt](url)`.\n- Max length: ~2000 words.\n- Replace ALL occurrences of `crypto.news` with `bitpulse`.\n\nContent:\n{{content}}\n\nImages:\n{{images}}\n\nBegin article below:"
 }
