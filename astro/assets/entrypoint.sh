@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Explicitly set SHELL to bash to avoid chokidar error
+export SHELL=/bin/bash
+
 # Check STAGE environment variable
 STAGE=${STAGE:-dev}
 
