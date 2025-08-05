@@ -123,10 +123,11 @@ export async function scrapeArticleContent(page: Page, url: string): Promise<Par
 
     // Clean up the article before extracting text
     const contentText = await page.$eval('div.post-detail__content.blocks', el => {
-        el.querySelectorAll('.cn-block-summary, .cn-block-related-link, .cn-block-disclaimer').forEach(e => e.remove());
-        el.querySelectorAll('figure, figcaption').forEach(e => e.remove());
-        el.querySelectorAll('token-badge, .token-badge-container').forEach(e => e.remove());
-        return el.innerText.trim();
+        const element = el as HTMLElement;
+        element.querySelectorAll('.cn-block-summary, .cn-block-related-link, .cn-block-disclaimer').forEach(e => e.remove());
+        element.querySelectorAll('figure, figcaption').forEach(e => e.remove());
+        element.querySelectorAll('token-badge, .token-badge-container').forEach(e => e.remove());
+        return element.innerText.trim();
     });
 
     return {
