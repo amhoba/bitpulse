@@ -9,8 +9,7 @@
 		"winston": "^3.17.0"
 	},
 	"scripts": {
-		"dev": "nodemon --exec 'tsx source/main.ts' ;",
-		"build": "tsc",
-		"start": "node dist/main.js"
+		"dev": "nodemon --ext 'ts,json' --exec 'tsx source/main.ts' ;",
+		"start": "tsx source/main.ts ;"
 	}
 }
