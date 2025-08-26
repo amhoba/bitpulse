@@ -36,12 +36,10 @@ services:
     command: --providers.docker=true --ping=true --log=true --log.level="TRACE" --accesslog=true --tracing=true
     ports:
       # The HTTP (AND S) port
-      - "80:80"
-      - "443:443"
+      - "8000:80"
     volumes:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
-      - traefik_acme_storage:/etc/traefik/acme
     environment:
       - TZ=UTC
       - STAGE=prod
@@ -64,8 +62,6 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nginx.rule=Host(`bitpulse.online`) && PathPrefix(`/`)"
-      - "traefik.http.routers.nginx.tls=true"
-      - "traefik.http.routers.nginx.tls.certResolver=myresolver"
     networks:
       - bitpulse
 
@@ -81,4 +77,3 @@ networks:
 volumes:
   astro_articles:
   astro_dist:
-  traefik_acme_storage:

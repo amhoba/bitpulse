@@ -15,20 +15,3 @@ tracing: {}
 entryPoints:
   web:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-
-  websecure:
-    address: ":443"
-
-certificatesResolvers:
-  myresolver:
-    acme:
-      email: "amhoba2014@gmail.com"
-      storage: "/etc/traefik/acme/acme.json"
-      httpChallenge:
-        # used during the challenge
-        entryPoint: web
