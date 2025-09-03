@@ -49,13 +49,19 @@ function writeMarkdownFile(
         title = title.slice(1, -1).trim();
     }
 
+    // Escape double quotes in title, description, and category
+    const escapeQuotes = (str: string) => str.replace(/"/g, '\\"');
+    const escapedTitle = escapeQuotes(title);
+    const escapedDescription = escapeQuotes(description);
+    const escapedCategory = escapeQuotes(category);
+
     const frontmatter = `---
-title: "${title}"
-description: "${description}"
+title: "${escapedTitle}"
+description: "${escapedDescription}"
 pubDate: ${today}
 author: "Amir Hossein Baghernezhad"
-category: "${category}"
-tags: [${tags.map(t => `"${t}"`).join(', ')}]
+category: "${escapedCategory}"
+tags: [${tags.map(t => `"${escapeQuotes(t)}"`).join(', ')}]
 ---
 `;
 
