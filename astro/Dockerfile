@@ -33,5 +33,6 @@ FROM dev AS prod
 
 USER node
 ADD --chown=node:node assets/ .
+RUN mkdir ./dist
 RUN pnpm i
 RUN pnpm build
